@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+  body {
+    font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+    line-height: 1.6;
+  }
+  h1 {
+    font-size: 1.5em;
+    border-bottom: 3px solid #ff9900;
+    padding-bottom: 8px;
+  }
+  .desc {
+    color: #555;
+    margin-bottom: 24px;
+    font-size: 0.95em;
+  }
+  .question {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: none;
+  }
+  .question.active { display: block; }
+  .qtitle {
+    font-weight: bold;
+    margin-bottom: 10px;
+    white-space: pre-line;
+  }
+  .qnum {
+    display: inline-block;
+    background: #232f3e;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-right: 8px;
+    font-size: 0.85em;
+  }
+  label.opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  label.opt:hover { background: #f0f4f8; }
+  .mark {
+    display: inline-block;
+    width: 22px;
+    font-weight: bold;
+    text-align: center;
+  }
+  .mark.correct { color: #1a8a1a; }
+  .mark.wrong { color: #d33; }
+  .result-badge {
+    display: none;
+    margin-top: 10px;
+    font-weight: bold;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.95em;
+  }
+  .result-badge.pass { background: #e6f7e6; color: #1a8a1a; display: block; }
+  .result-badge.fail { background: #fbe9e9; color: #c0392b; display: block; }
+  .explain {
+    display: none;
+    margin-top: 8px;
+    font-size: 0.88em;
+    color: #555;
+    background: #f8f9fa;
+    border-left: 3px solid #ff9900;
+    padding: 10px 12px;
+    white-space: pre-line;
+  }
+  .explain.show { display: block; }
+  #scoreBar {
+    position: sticky;
+    top: 0;
+    background: #232f3e;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    gap: 12px;
+  }
+  button {
+    background: #ff9900;
+    color: #232f3e;
+    border: none;
+    padding: 10px 18px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95em;
+  }
+  button:hover:not(:disabled) { background: #ffb84d; }
+  button:disabled { background: #666; color: #ccc; cursor: not-allowed; }
+  #scoreText { font-size: 1.1em; font-weight: bold; }
+  .navRow {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+  #finalSummary {
+    display: none;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  #finalSummary.show { display: block; }
+  #finalSummary .big { font-size: 1.8em; font-weight: bold; color: #232f3e; margin-bottom: 8px; }
+
+  @media (max-width: 480px) {
+    body { padding: 16px 10px 60px; }
+    h1 { font-size: 1.2em; }
+    .desc { font-size: 0.85em; }
+    .question { padding: 14px 12px; }
+    #scoreBar { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    #scoreBar > div { flex-wrap: wrap; gap: 8px 12px; }
+    #scoreBar button, #resumeBanner button { font-size: 0.8em; padding: 8px 10px; }
+    .navRow { flex-wrap: wrap; gap: 8px; }
+    .navRow button { flex: 1 1 auto; min-width: 80px; font-size: 0.85em; padding: 10px 8px; }
+    label.opt { padding: 8px 6px; }
+    .code-block { font-size: 0.75em; padding: 10px; }
+    #finalSummary .navRow button { flex: 1 1 40%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>{{H1_TITLE}}</h1>
+<p class="desc">{{DESCRIPTION}}</p>
+
+<div id="scoreBar">
+  <div style="display:flex; gap:16px; align-items:center;">
+    <span id="progressText">問題 1 / {{COUNT}}</span>
+    <span id="scoreText">正解数: 0</span>
+  </div>
+  <button onclick="downloadResults()">結果をダウンロード</button>
+</div>
+
+<div id="resumeBanner" style="display:none; background:#fff3cd; color:#664d03; padding:10px 14px; border-radius:6px; margin-bottom:16px; font-size:0.9em;">
+  <span id="resumeText"></span>
+  <button onclick="restart()" style="margin-left:10px; padding:4px 10px; font-size:0.85em;">最初からやり直す</button>
+</div>
+
+<div id="quiz"></div>
+
+<div id="finalSummary">
+  <div class="big" id="finalScore"></div>
+  <div>お疲れさまでした。「最初から」でもう一度挑戦できます。</div>
+  <div class="navRow" style="justify-content:center; margin-top:16px; gap:12px;">
+    <button onclick="downloadResults()">結果をダウンロード</button>
+    <button onclick="restart()">最初から</button>
+  </div>
+</div>
+
+<script>
+/*
+  questions配列の各要素の形式:
+  {
+    q: "問題文(状況説明を含む長文でも可)",
+    options: ["選択肢1","選択肢2","選択肢3","選択肢4","選択肢5"],
+    correct: [0,1],   // 正解の選択肢インデックス(0始まり)。通常2つ
+    explain: "✅ 正解の理由\n・A: ...\n・B: ...\n\n❌ 主な誤答\n・C: ...\n・D: ...\n\n📌 補足\n..."
+  }
+*/
+const questions = [
+  // ここに問題オブジェクトを列挙する
+];
+
+const quiz = document.getElementById('quiz');
+let currentIndex = 0;
+let correctCount = 0;
+const answered = new Array(questions.length).fill(false);
+const selections = new Array(questions.length).fill(null);
+const passResults = new Array(questions.length).fill(null);
+const STORAGE_KEY = 'aws-quiz-state::' + location.pathname;
+
+questions.forEach((item, qi) => {
+  const div = document.createElement('div');
+  div.className = 'question';
+  div.id = 'q' + qi;
+
+  let optsHtml = '';
+  item.options.forEach((opt, oi) => {
+    optsHtml += `
+      <label class="opt">
+        <input type="checkbox" data-q="${qi}" data-o="${oi}">
+        <span class="mark" id="mark-${qi}-${oi}"></span>
+        <span>${opt}</span>
+      </label>`;
+  });
+
+  div.innerHTML = `
+    <div class="qtitle"><span class="qnum">Q${qi + 1}</span>${item.q}</div>
+    ${optsHtml}
+    <div class="result-badge" id="badge-${qi}"></div>
+    <div class="explain" id="explain-${qi}">${item.explain}</div>
+    <div class="navRow">
+      <button id="prev-${qi}" onclick="goPrev()" ${qi === 0 ? 'disabled' : ''}>前へ</button>
+      <button id="answer-${qi}" onclick="gradeOne(${qi})">回答する</button>
+      <button id="next-${qi}" onclick="goNext()" disabled>${qi === questions.length - 1 ? '結果を見る' : '次へ'}</button>
+    </div>
+  `;
+  quiz.appendChild(div);
+});
+
+function showQuestion(idx) {
+  document.querySelectorAll('.question').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+  document.getElementById('finalSummary').classList.remove('show');
+  document.getElementById('progressText').textContent = `問題 ${idx + 1} / ${questions.length}`;
+}
+
+function applyMarks(qi) {
+  const item = questions[qi];
+  const checked = [];
+
+  item.options.forEach((opt, oi) => {
+    const cb = document.querySelector(`input[data-q="${qi}"][data-o="${oi}"]`);
+    const markEl = document.getElementById(`mark-${qi}-${oi}`);
+    const isCorrectOpt = item.correct.includes(oi);
+    if (cb.checked) checked.push(oi);
+    cb.disabled = true;
+
+    if ((cb.checked && isCorrectOpt) || (!cb.checked && isCorrectOpt)) {
+      markEl.textContent = '○';
+      markEl.className = 'mark correct';
+    } else if (cb.checked && !isCorrectOpt) {
+      markEl.textContent = '✕';
+      markEl.className = 'mark wrong';
+    } else {
+      markEl.textContent = '';
+      markEl.className = 'mark';
+    }
+  });
+
+  const isPass = checked.length === item.correct.length &&
+    checked.every(v => item.correct.includes(v));
+
+  const badge = document.getElementById(`badge-${qi}`);
+  document.getElementById(`explain-${qi}`).classList.add('show');
+
+  if (isPass) {
+    badge.textContent = '正解 ○';
+    badge.className = 'result-badge pass';
+  } else {
+    badge.textContent = '不正解 ✕';
+    badge.className = 'result-badge fail';
+  }
+
+  document.getElementById(`answer-${qi}`).disabled = true;
+  document.getElementById(`next-${qi}`).disabled = false;
+
+  return { checked, isPass };
+}
+
+function gradeOne(qi) {
+  const { checked, isPass } = applyMarks(qi);
+
+  if (!answered[qi]) {
+    answered[qi] = true;
+    selections[qi] = checked;
+    passResults[qi] = isPass;
+    if (isPass) correctCount++;
+    document.getElementById('scoreText').textContent = `正解数: ${correctCount}`;
+    saveState();
+  }
+}
+
+function restoreQuestionUI(qi, selectedIndices) {
+  questions[qi].options.forEach((opt, oi) => {
+    const cb = document.querySelector(`input[data-q="${qi}"][data-o="${oi}"]`);
+    cb.checked = selectedIndices ? selectedIndices.includes(oi) : false;
+  });
+  applyMarks(qi);
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: 1,
+      timestamp: new Date().toISOString(),
+      correctCount,
+      answered,
+      selections,
+      passResults
+    }));
+  } catch (e) { /* localStorageが使えない環境では無視 */ }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* noop */ }
+}
+
+function extractQuestionSummary(qHtml) {
+  const div = document.createElement('div');
+  div.innerHTML = qHtml;
+  const text = div.textContent.replace(/\s+/g, ' ').trim();
+  return text.length > 60 ? text.slice(0, 60) + '…' : text;
+}
+
+function downloadResults() {
+  const letters = 'ABCDE';
+  const lines = [];
+  lines.push(document.title);
+  lines.push('採点結果: ' + new Date().toLocaleString('ja-JP'));
+  lines.push(`正解数: ${correctCount} / ${questions.length}`);
+  lines.push('');
+
+  questions.forEach((item, qi) => {
+    const summary = extractQuestionSummary(item.q);
+    const status = answered[qi] ? (passResults[qi] ? '正解' : '不正解') : '未回答';
+    const selectedLetters = (selections[qi] || []).map(oi => letters[oi]).join(', ') || 'なし';
+    const correctLetters = item.correct.map(oi => letters[oi]).join(', ');
+    lines.push(`Q${qi + 1} [${status}] ${summary}`);
+    lines.push(`  選択: ${selectedLetters} / 正解: ${correctLetters}`);
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeTitle = document.title.replace(/[\\/:*?"<>|]/g, '_');
+  a.download = `${safeTitle}_結果_${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function goNext() {
+  if (currentIndex < questions.length - 1) {
+    currentIndex++;
+    showQuestion(currentIndex);
+  } else {
+    document.querySelectorAll('.question').forEach(el => el.classList.remove('active'));
+    document.getElementById('finalSummary').classList.add('show');
+    document.getElementById('finalScore').textContent =
+      `結果: ${correctCount} / ${questions.length} 問正解`;
+  }
+}
+
+function goPrev() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    showQuestion(currentIndex);
+  }
+}
+
+function restart() {
+  currentIndex = 0;
+  correctCount = 0;
+  answered.fill(false);
+  selections.fill(null);
+  passResults.fill(null);
+  clearState();
+  document.getElementById('resumeBanner').style.display = 'none';
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.disabled = false;
+  });
+  document.querySelectorAll('.mark').forEach(el => { el.textContent = ''; el.className = 'mark'; });
+  document.querySelectorAll('.result-badge').forEach(el => { el.textContent = ''; el.className = 'result-badge'; });
+  document.querySelectorAll('.explain').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('[id^="answer-"]').forEach(btn => btn.disabled = false);
+  document.querySelectorAll('[id^="next-"]').forEach(btn => btn.disabled = true);
+  document.getElementById('scoreText').textContent = '正解数: 0';
+  showQuestion(0);
+}
+
+function init() {
+  const state = loadState();
+
+  if (state && Array.isArray(state.answered) && state.answered.some(Boolean)) {
+    correctCount = state.correctCount || 0;
+
+    for (let i = 0; i < questions.length; i++) {
+      answered[i] = !!state.answered[i];
+      selections[i] = state.selections ? state.selections[i] : null;
+      passResults[i] = state.passResults ? state.passResults[i] : null;
+      if (answered[i]) {
+        restoreQuestionUI(i, selections[i]);
+      }
+    }
+
+    document.getElementById('scoreText').textContent = `正解数: ${correctCount}`;
+
+    const dt = state.timestamp ? new Date(state.timestamp).toLocaleString('ja-JP') : '';
+    document.getElementById('resumeText').textContent = `前回の回答(${dt})を読み込みました。続きから回答できます。`;
+    document.getElementById('resumeBanner').style.display = 'block';
+
+    const firstUnanswered = answered.findIndex(a => !a);
+    if (firstUnanswered === -1) {
+      document.querySelectorAll('.question').forEach(el => el.classList.remove('active'));
+      document.getElementById('finalSummary').classList.add('show');
+      document.getElementById('finalScore').textContent = `結果: ${correctCount} / ${questions.length} 問正解`;
+      document.getElementById('progressText').textContent = `問題 ${questions.length} / ${questions.length}`;
+    } else {
+      currentIndex = firstUnanswered;
+      showQuestion(currentIndex);
+    }
+  } else {
+    showQuestion(0);
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
