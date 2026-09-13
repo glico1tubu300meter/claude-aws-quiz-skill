@@ -4,9 +4,7 @@
 
 **ライブデモ(基準サンプル2問):** https://glico1tubu300meter.github.io/claude-aws-quiz-skill/demo/
 
-| 出題画面 | 回答後(解説表示) |
-| --- | --- |
-| ![出題画面](assets/screenshots/quiz_demo.png) | ![回答後の解説表示](assets/screenshots/quiz_demo_answered.png) |
+![出題画面](assets/screenshots/quiz_demo.png)
 
 ## できること
 
