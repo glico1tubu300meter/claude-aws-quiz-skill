@@ -2,6 +2,10 @@
 
 [Claude Code](https://claude.com/claude-code) 用のカスタムスキル。AWS認定試験対策の複数選択(2つ選べ)問題クイズを、単一HTMLファイルとして生成する。
 
+**ライブデモ(基準サンプル2問):** https://glico1tubu300meter.github.io/claude-aws-quiz-skill/demo/
+
+![出題画面](assets/screenshots/quiz_demo.png)
+
 ## できること
 
 - 会話中の要望(試験区分・難易度・トピック・問題数)に応じて、1問ずつ回答して
